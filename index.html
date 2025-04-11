@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سلمى - مستشارتك العقارية</title>
+</head>
+<body style="font-family: Arial, sans-serif; direction: rtl; text-align: right; padding: 20px;">
+  <h1>مرحباً! أنا سلمى 🌟</h1>
+  <div id="chat" style="border:1px solid #ccc; padding:10px; height:300px; overflow-y:auto;"></div>
+  
+  <input id="userInput" type="text" placeholder="اكتب رسالتك هنا..." style="width:80%; padding:10px;">
+  <button onclick="sendMessage()">إرسال</button>
+  <button onclick="startListening()">🎤 تحدث</button>
+
+  <script>
+    const chatDiv = document.getElementById('chat');
+    const backendUrl = 'https://salma-backend.onrender.com/salma'; // Your backend URL
+
+    function addMessage(text, from = 'user') {
+      const message = document.createElement('div');
+      message.style.margin = '10px 0';
+      message.innerHTML = from === 'user' ? `<b>أنت:</b> ${text}` : `<b>سلمى:</b> ${text}`;
+      chatDiv.appendChild(message);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const userText = input.value;
+      if (!userText) return;
+      addMessage(userText, 'user');
+      input.value = '';
+
+      const response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userMessage: userText })
+      });
+      
+      const data = await response.json();
+      addMessage(data.aiText, 'salma');
+      
+      const audio = new Audio(`data:audio/mp3;base64,${data.voiceAudioBase64}`);
+      audio.play();
+
+      // Create video element
+      const video = document.createElement('video');
+      video.src = data.videoUrl;
+      video.autoplay = true;
+      video.controls = true;
+      video.style.width = '100%';
+      chatDiv.appendChild(video);
+      chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+
+    function startListening() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'ar-EG';
+      recognition.start();
+      recognition.onresult = function(event) {
+        document.getElementById('userInput').value = event.results[0][0].transcript;
+        sendMessage();
+      }
+    }
+  </script>
+</body>
+</html>
